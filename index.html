@@ -75,6 +75,7 @@
   .field input[type=text],.field input[type=number],.field input[type=date],.field select,.field textarea{
     width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:'Inter';background:#FCFCFA;color:var(--ink);
   }
+  .field select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235B6B72' stroke-width='1.6' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer;}
   .field textarea{min-height:80px;resize:vertical;}
   .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--teal);outline-offset:1px;border-color:var(--teal);}
   .field.error input,.field.error select,.field.error textarea{border-color:var(--red);background:#FBEEEA;}
@@ -251,7 +252,7 @@ const steps = [
     ref:'Manual Cl. 8.1.1 – 8.1.9 · Form 1',
     fields:[
       {id:'projectName', label:'Project / requirement name', type:'text', required:true, placeholder:'e.g. Annual Landscaping Services – Muscat HQ'},
-      {id:'userDept', label:'Requesting department', type:'text', required:true, placeholder:'e.g. Facilities Management'},
+      {id:'userDept', label:'Requesting department', type:'select', required:true, options:['Finance','Development','IT','Investment','HR & Admin','Communication']},
       {id:'requisitionNo', label:'Requisition number', type:'text', required:false, placeholder:'Auto-generated in ERP once approved', hint:'Leave blank if not yet raised in the ERP — you\'ll confirm this in Step 1 within 5 days of strategy approval (Cl. 8.1.8).'},
       {id:'requiredDate', label:'Goods/services required by', type:'date', required:true},
       {id:'scope', label:'Brief scope of work', type:'textarea', required:true, placeholder:'Milestones, activities and the period required for this procurement.'},
@@ -531,6 +532,11 @@ function fieldHtml(f){
   let inner = '';
   if(f.type==='text' || f.type==='number' || f.type==='date'){
     inner = `<input type="${f.type}" id="fld_${f.id}" value="${(val+'').replace(/"/g,'&quot;')}" placeholder="${f.placeholder||''}" oninput="onField('${f.id}', this.value)">`;
+  } else if(f.type==='select'){
+    inner = `<select id="fld_${f.id}" onchange="onField('${f.id}', this.value)">
+      <option value="" ${val?'':'selected'} disabled>Select a department…</option>
+      ${f.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join('')}
+    </select>`;
   } else if(f.type==='textarea'){
     inner = `<textarea id="fld_${f.id}" placeholder="${f.placeholder||''}" oninput="onField('${f.id}', this.value)">${val}</textarea>`;
   } else if(f.type==='toggle'){
