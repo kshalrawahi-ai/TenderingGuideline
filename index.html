@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASAAS Procurement Navigator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+  :root{
+    --navy:#0F2A3D;
+    --navy-2:#16394F;
+    --teal:#0E7C7B;
+    --teal-light:#E4F2F1;
+    --sand:#F6F3EC;
+    --paper:#FFFFFF;
+    --amber:#C97A3D;
+    --amber-light:#FBEBDD;
+    --ink:#16232B;
+    --ink-soft:#5B6B72;
+    --line:#DFE0DC;
+    --green:#2E7D5B;
+    --red:#B3462C;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--sand);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:'Fraunces',serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;letter-spacing:.02em;}
+
+  /* Shell */
+  .shell{display:flex;min-height:100vh;}
+  .rail{width:280px;flex:none;background:var(--navy);color:#fff;padding:28px 20px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .rail-brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .rail-brand .mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--teal),#0a5c5b);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:16px;}
+  .rail-brand .name{font-family:'Fraunces',serif;font-size:17px;font-weight:600;}
+  .rail-sub{font-size:11.5px;color:#9FB4C0;margin-bottom:26px;letter-spacing:.03em;}
+  .rail-progress{font-size:11px;color:#9FB4C0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+  .rail-bar{height:4px;background:#22475E;border-radius:4px;overflow:hidden;margin-bottom:22px;}
+  .rail-bar-fill{height:100%;background:linear-gradient(90deg,var(--teal),#4FBDAF);transition:width .35s ease;}
+  .steps{list-style:none;margin:0;padding:0;}
+  .steps li{display:flex;gap:11px;padding:10px 8px;border-radius:8px;cursor:pointer;align-items:flex-start;transition:background .15s;}
+  .steps li:hover{background:#17394E;}
+  .steps li.active{background:#1B4258;}
+  .steps li .num{flex:none;width:24px;height:24px;border-radius:50%;border:1.5px solid #4C6B7A;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'IBM Plex Mono',monospace;color:#B9CAD2;}
+  .steps li.done .num{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .steps li.active .num{border-color:#4FBDAF;color:#fff;}
+  .steps li .label{font-size:13px;line-height:1.35;padding-top:2px;color:#D7E2E7;}
+  .steps li.active .label{color:#fff;font-weight:600;}
+  .steps li.disabled{opacity:.38;cursor:not-allowed;}
+  .steps li.skip .label:after{content:" · skipped";font-style:italic;color:#7d97a4;}
+
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .topbar{background:var(--paper);border-bottom:1px solid var(--line);padding:16px 40px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5;}
+  .topbar .breadcrumb{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;}
+  .topbar .req-title{font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin-top:2px;}
+  .topbar .actions{display:flex;gap:10px;align-items:center;}
+  .chip{font-size:11px;padding:5px 10px;border-radius:20px;background:var(--teal-light);color:#0a5c5b;font-weight:600;}
+
+  .content{padding:40px;max-width:880px;margin:0 auto;width:100%;}
+  .step-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+  .step-title{font-size:30px;margin:0 0 10px;}
+  .step-intro{color:var(--ink-soft);font-size:15px;line-height:1.6;max-width:640px;margin-bottom:28px;}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:26px 28px;margin-bottom:20px;}
+  .card h3{font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--navy);margin:0 0 16px;font-family:'Inter';font-weight:700;}
+
+  .help{background:var(--teal-light);border-left:3px solid var(--teal);border-radius:8px;padding:14px 16px;font-size:13.5px;color:#0a4a49;line-height:1.55;margin-bottom:20px;}
+  .help b{color:#073938;}
+  .help .ref{display:block;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0a5c5b;}
+
+  .field{margin-bottom:18px;}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--navy);}
+  .field .hint{display:block;font-weight:400;font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .field input[type=text],.field input[type=number],.field input[type=date],.field select,.field textarea{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:'Inter';background:#FCFCFA;color:var(--ink);
+  }
+  .field textarea{min-height:80px;resize:vertical;}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--teal);outline-offset:1px;border-color:var(--teal);}
+  .field.error input,.field.error select,.field.error textarea{border-color:var(--red);background:#FBEEEA;}
+  .field .err-msg{color:var(--red);font-size:12px;margin-top:5px;display:none;}
+  .field.error .err-msg{display:block;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+  @media(max-width:640px){.row2,.row3{grid-template-columns:1fr;}}
+
+  .option-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .option-card{border:1.5px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;transition:.15s;background:#FCFCFA;}
+  .option-card:hover{border-color:#9FC6C5;}
+  .option-card.selected{border-color:var(--teal);background:var(--teal-light);}
+  .option-card .ttl{font-weight:700;font-size:13.5px;color:var(--navy);margin-bottom:3px;}
+  .option-card .desc{font-size:12px;color:var(--ink-soft);line-height:1.4;}
+
+  .upload-zone{border:1.5px dashed #B9C3B0;border-radius:10px;padding:18px;text-align:center;background:#FBFAF6;cursor:pointer;transition:.15s;}
+  .upload-zone:hover{border-color:var(--teal);background:var(--teal-light);}
+  .upload-zone input{display:none;}
+  .upload-zone .icon{font-size:20px;margin-bottom:6px;}
+  .upload-zone .txt{font-size:13px;color:var(--ink-soft);}
+  .upload-zone .txt b{color:var(--navy);}
+  .file-list{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+  .file-item{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;}
+  .file-item .fname{display:flex;gap:8px;align-items:center;}
+  .file-item .fname .fico{width:20px;height:20px;border-radius:4px;background:var(--navy);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;font-family:monospace;}
+  .file-item button{background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;font-weight:600;}
+  .attach-required{font-size:11px;color:var(--amber);font-weight:700;margin-left:6px;}
+
+  .approval-box{border:1.5px solid var(--teal);border-radius:12px;padding:20px 22px;background:linear-gradient(180deg,#fff,var(--teal-light));}
+  .approval-path{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0;}
+  .approval-node{background:var(--navy);color:#fff;padding:8px 14px;border-radius:20px;font-size:12.5px;font-weight:600;display:flex;flex-direction:column;align-items:center;text-align:center;min-width:90px;}
+  .approval-node small{font-weight:400;opacity:.75;font-size:10px;margin-top:2px;}
+  .approval-arrow{color:var(--teal);font-size:16px;}
+  .matrix-ref{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+
+  .banner-warn{background:var(--amber-light);border:1px solid #E3B98D;border-radius:10px;padding:12px 16px;font-size:13px;color:#7A4419;margin-bottom:22px;display:flex;gap:10px;}
+  .banner-warn b{color:#5c330f;}
+
+  .nav-footer{display:flex;justify-content:space-between;align-items:center;padding-top:6px;}
+  .btn{border:none;border-radius:8px;padding:12px 22px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter';transition:.15s;}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{background:#0A1E2C;}
+  .btn-ghost{background:none;color:var(--navy);border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--navy);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .switch{position:relative;width:42px;height:24px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;cursor:pointer;inset:0;background:#D5D8CF;border-radius:24px;transition:.2s;}
+  .slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+  input:checked + .slider{background:var(--teal);}
+  input:checked + .slider:before{transform:translateX(18px);}
+
+  .summary-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .summary-table td{padding:9px 4px;border-bottom:1px solid var(--line);}
+  .summary-table td:first-child{color:var(--ink-soft);width:45%;}
+  .summary-table td:last-child{font-weight:600;color:var(--navy);}
+
+  .tip-icon{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#D9DFD5;color:#4a5548;font-size:10px;font-weight:700;cursor:help;margin-left:5px;position:relative;}
+  .tip-icon .tip-pop{display:none;position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:230px;background:var(--navy);color:#fff;padding:10px 12px;border-radius:8px;font-size:11.5px;font-weight:400;line-height:1.5;z-index:20;}
+  .tip-icon:hover .tip-pop{display:block;}
+
+  .complete-screen{text-align:center;padding:60px 20px;}
+  .complete-screen .seal{width:64px;height:64px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px;}
+  .radio-list{display:flex;flex-direction:column;gap:8px;}
+  .radio-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;}
+  .radio-item.sel{border-color:var(--teal);background:var(--teal-light);}
+  .radio-item input{margin-top:3px;}
+  .badge-thresh{display:inline-block;background:var(--navy);color:#fff;font-size:10.5px;padding:2px 8px;border-radius:10px;margin-left:8px;font-family:'IBM Plex Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" id="rail">
+    <div class="rail-brand"><div class="mark">A</div><div class="name">Procurement<br>Navigator</div></div>
+    <div class="rail-sub">ASAAS · Guided Tender &amp; Contracting Workflow</div>
+    <div class="rail-progress" id="progressLabel">Step 1 of 14</div>
+    <div class="rail-bar"><div class="rail-bar-fill" id="progressFill" style="width:7%"></div></div>
+    <ul class="steps" id="stepList"></ul>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="breadcrumb" id="crumbMode">Procurement Request</div>
+        <div class="req-title" id="reqTitleTop">Untitled requisition</div>
+      </div>
+      <div class="actions">
+        <span class="chip" id="valueChip">Value not set</span>
+        <button class="btn btn-ghost" style="padding:8px 14px;font-size:12.5px;" onclick="resetAll()">Reset draft</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ASAAS PROCUREMENT NAVIGATOR
+   Guided wizard implementing the Procurement & Contracting
+   Manual (Rev 1.0) and Authority Matrix (v3.0).
+   ============================================================ */
+
+const STORE_KEY = 'asaas_req_draft_v1';
+let state = {
+  currentStep: 0,
+  data: {},
+  files: {},          // { stepId: [ {name,size} ] }
+  visited: {}
+};
+
+// ---------- persistence (personal, per-browser) ----------
+async function loadDraft(){
+  try{
+    const r = await window.storage.get(STORE_KEY);
+    if(r && r.value){ state = JSON.parse(r.value); }
+  }catch(e){ /* no draft yet */ }
+  render();
+}
+async function saveDraft(){
+  try{ await window.storage.set(STORE_KEY, JSON.stringify(state)); }catch(e){ console.warn('save failed', e); }
+}
+function resetAll(){
+  if(!confirm('Clear this draft requisition and start over?')) return;
+  state = {currentStep:0, data:{}, files:{}, visited:{}};
+  saveDraft(); render();
+}
+
+// ---------- APPROVAL ENGINE (derived from Authority Matrix) ----------
+// NOTE: some scanned cells (single-letter RACI markers on rows J1/J2/K1)
+// were not fully legible; thresholds below are legible and reliable,
+// role assumptions are flagged with (assumed) in the tooltip.
+function tenderApproval(value, mode){
+  value = Number(value)||0;
+  if(mode === 'single_source'){
+    if(value <= 5000) return {chain:['Facilitator (SCM)','SCM Manager'], ref:'L1', note:'Single-source approvals ≤ OMR 5,000 (assumed departmental sign-off; verify with SCM).'};
+    if(value <= 100000) return {chain:['Originator Dept.','Tender Committee (TC) — Approve'], ref:'L2', note:'Single-source contracts OMR 5,001–100,000 require TC approval.'};
+    return {chain:['Originator Dept.','Tender Committee (TC) — Review','CEO — Approve'], ref:'L3', note:'Single-source contracts above OMR 100,000 require CEO approval, TC review; approval procedure must be documented.'};
+  }
+  // competitive (open/closed tender or competition)
+  if(value <= 50000) return {chain:['Facilitator — Prepare','CM (Dept. Manager) — Review','CEO — Approve'], ref:'K1', note:'Requires Finance confirmation of budget availability and minimum 3 quotes from reliable sources (Cl. Precondition K1).'};
+  if(value <= 100000) return {chain:['Originator + Facilitator','Tender Committee (TC) — Approve'], ref:'K2', note:'Tender Strategy & Award value OMR 50,001–100,000.'};
+  if(value <= 1000000) return {chain:['Originator + Facilitator','Tender Committee (TC) — Approve'], ref:'K3', note:'Tender Strategy & Evaluation Award value OMR 100,001–1,000,000.'};
+  if(value <= 5000000) return {chain:['Tender Committee (TC) — Evaluate','Executive Committee (EC) — Approve'], ref:'K4', note:'Tender Strategy/Evaluation processed per K3 workflow; final award requires EC approval (assumed from partial matrix text — verify).'};
+  return {chain:['Tender Committee (TC) — Evaluate','Executive Committee (EC) — Recommend','Board of Directors (BOD) — Approve'], ref:'K5', note:'Above OMR 5,000,000: Tender Strategy/Evaluation subject to K3 workflow; Award Recommendation endorsed by EC; final approval by BOD.'};
+}
+function variationApproval(pct, value){
+  value = Number(value)||0; pct = Number(pct)||0;
+  if(value <= 50000 && pct < 10) return {chain:['CEO — Approve'], ref:'M1', note:'CEO approval is required for all contingency variations regardless of size (Cl. M1).'};
+  if(value <= 50000 && pct >= 10) return {chain:['Tender Committee (TC) — Approve'], ref:'M2', note:'Variation ≤ OMR 50,000 but ≥10% of contract value requires TC approval.'};
+  if(value <= 100000 && pct < 10) return {chain:['CM — Prepare','CEO — Approve'], ref:'M3', note:'CEO approval required (Cl. M3/M4 precondition).'};
+  if(value <= 100000 && pct >= 10) return {chain:['Tender Committee (TC) — Approve','CEO — Approve'], ref:'M4', note:'Variation ≤OMR 100,000, ≥10%: TC review + CEO approval required.'};
+  return {chain:['Board of Directors (BOD) — Approve'], ref:'M5/M6', note:'Variations exceeding OMR 100,000, or affecting overall budget/timeline, require BOD approval with a documented investment/finance/risk assessment (Cl. M6).'};
+}
+function bondRequirements(value, advanceRequested){
+  const r = [];
+  r.push({label:'Tender Bond', required: value>0, detail:'1% of tender/bid value — required with bid submission for quoted contracts (Cl. 12.1).'});
+  r.push({label:'Performance Bond', required: value > 20000, detail:'5% of accepted Contract Sum — required for contracts exceeding OMR 20,000, valid through the full contract + defects liability period (Cl. 13.1–13.3).'});
+  if(advanceRequested){
+    r.push({label:'Advance Payment Bond', required: value > 100000, detail:'10% of accepted Contract Sum — required where Provider requests an advance payment on Service Contracts exceeding OMR 100,000 (Cl. 14.1–14.2).'});
+  }
+  return r;
+}
+
+// ---------- STEP DEFINITIONS ----------
+const steps = [
+  {
+    id:'requisition', label:'Requisition & Tender Strategy', eyebrow:'Step 1 · Planning',
+    title:'Tell us what you need',
+    intro:'Every procurement starts with a written Tender Strategy from you (the Originator). This is the request that gets approval before any tendering happens — think of it as your business case.',
+    help:'A Tender Strategy names the project, gives a brief scope, an estimated value, a list of possible bidders and the evaluation criteria you plan to use. Minor works under OMR 2,000 and genuine emergencies can be approved by email instead of the full form.',
+    ref:'Manual Cl. 8.1.1 – 8.1.9 · Form 1',
+    fields:[
+      {id:'projectName', label:'Project / requirement name', type:'text', required:true, placeholder:'e.g. Annual Landscaping Services – Muscat HQ'},
+      {id:'userDept', label:'Requesting department', type:'text', required:true, placeholder:'e.g. Facilities Management'},
+      {id:'requisitionNo', label:'Requisition number', type:'text', required:false, placeholder:'Auto-generated in ERP once approved', hint:'Leave blank if not yet raised in the ERP — you\'ll confirm this in Step 1 within 5 days of strategy approval (Cl. 8.1.8).'},
+      {id:'requiredDate', label:'Goods/services required by', type:'date', required:true},
+      {id:'scope', label:'Brief scope of work', type:'textarea', required:true, placeholder:'Milestones, activities and the period required for this procurement.'},
+      {id:'estValue', label:'Estimated value (OMR)', type:'number', required:true, hint:'This drives who approves your procurement — be as accurate as you can.'},
+      {id:'inMpp', label:'Is this included in the approved Master Procurement Plan (MPP)?', type:'toggle', required:false, hint:'If not, extra CEO approval is needed before you can proceed (Cl. J2 precondition).'},
+      {id:'emergency', label:'This is a minor work (≤ OMR 2,000) or genuine emergency', type:'toggle', required:false, hint:'These can be approved by email rather than the full Tender Strategy form (Cl. 8.1.4).'}
+    ],
+    attachments:[{id:'tenderStrategyForm', label:'Tender Strategy Form (Form 1)', required:true, tip:'Use the standard template — Section 18 of the Manual.'}]
+  },
+  {
+    id:'mode', label:'Method of Selecting Vendors', eyebrow:'Step 2 · Strategy',
+    title:'How will you select a supplier?',
+    intro:'The Manual defines four sourcing methods. Pick the one that matches your situation — this choice also decides your approval path later.',
+    help:'Closed Tender is the most common method. Single Source (direct award) should only be used in specific situations — exclusivity, genuine urgency, compatibility with existing equipment, or confidentiality — and must be justified in writing.',
+    ref:'Manual Cl. 8.3.1 – 8.3.4',
+    fields:[
+      {id:'mode', label:'Sourcing method', type:'options', required:true, options:[
+        {value:'single_source', title:'Single Source', desc:'Direct award to one supplier. Least preferred — requires written justification.'},
+        {value:'closed_tender', title:'Closed Tender', desc:'Most common. A select, pre-approved list of bidders is invited.'},
+        {value:'open_tender', title:'Open Tender', desc:'Publicly advertised to the whole market via newspapers / company channels.'},
+        {value:'competition', title:'Competition', desc:'Rarely used — a public competition with a reward, contract, or both.'}
+      ]},
+      {id:'singleSourceJustification', label:'Justification for Single Source', type:'textarea', required:false, showIf:{field:'mode', equals:'single_source'}, placeholder:'Which of the 5 permitted grounds applies? (exclusivity, urgency, catastrophe, compatibility, confidentiality)'}
+    ],
+    attachments:[{id:'justificationMemo', label:'Single Source justification memo', required:false, showIf:{field:'mode', equals:'single_source'}, tip:'Only required if you selected Single Source.'}]
+  },
+  {
+    id:'vendorlist', label:'Vendor List & Prequalification', eyebrow:'Step 3 · Sourcing',
+    title:'Build your bidder list',
+    intro:'List the companies you plan to invite. Aim for at least three — fewer than that and extra approval is needed to add more bidders after the tender closes.',
+    help:'Prequalification isn\'t always required — skip it for contractors already delivering an active ASAAS project (they\'re valid for 2 years). Otherwise, a short questionnaire covering credentials, capacity and financial health helps you assess new suppliers fairly.',
+    ref:'Manual Cl. 8.2.7 – 8.2.14, 8.3.5, 8.4.4',
+    skipIf:{field:'mode', equals:'single_source'},
+    fields:[
+      {id:'bidderCount', label:'Number of bidders to invite', type:'number', required:true, hint:'Fewer than 3 triggers a note below — this is allowed, but needs SCM sign-off if bidders are added after closing (Cl. 8.4.4).'},
+      {id:'bidderNames', label:'Bidder names (one per line)', type:'textarea', required:true, placeholder:'Company A\nCompany B\nCompany C'},
+      {id:'prequalRequired', label:'Prequalification exercise required', type:'toggle', required:false, hint:'Not required for contractors with an on-going ASAAS project, or those successfully prequalified in the last 2 years.'}
+    ],
+    attachments:[
+      {id:'vendorListDoc', label:'Vendor list / credentials received', required:true},
+      {id:'prequalDocs', label:'Prequalification questionnaire responses', required:false, showIf:{field:'prequalRequired', equals:true}}
+    ]
+  },
+  {
+    id:'tenderdoc', label:'Tender Document Preparation', eyebrow:'Step 4 · Documentation',
+    title:'Prepare your RFP / RFQ',
+    intro:'Draft the formal document Tenderers will respond to. It must line up with the Tender Strategy you already had approved.',
+    help:'Use an RFP for more complex, negotiable requirements and an RFQ for straightforward price-led purchases. Prices must be shown in Omani Rials (figures and words); nothing in the price schedule may be scratched out — corrections must be rewritten and signed.',
+    ref:'Manual Cl. 8.2.1 – 8.2.6',
+    fields:[
+      {id:'docType', label:'Document type', type:'options', required:true, options:[
+        {value:'rfp', title:'RFP', desc:'Request for Proposal — for complex or negotiable scopes.'},
+        {value:'rfq', title:'RFQ', desc:'Request for Quotation — straightforward, price-led purchases.'}
+      ]},
+      {id:'evalTechnical', label:'Technical weighting (%)', type:'number', required:false},
+      {id:'evalCommercial', label:'Commercial weighting (%)', type:'number', required:false, hint:'Technical + Commercial should total 100%.'},
+      {id:'validityDays', label:'Bid validity period (days)', type:'number', required:true},
+      {id:'hasBoq', label:'Includes a Bill of Quantities (BoQ)', type:'toggle', required:false}
+    ],
+    attachments:[
+      {id:'draftTenderDoc', label:'Draft Tender Document', required:true},
+      {id:'boqFile', label:'Bill of Quantities / pricing schedule', required:false, showIf:{field:'hasBoq', equals:true}},
+      {id:'drawingsSpecs', label:'Supporting drawings, specs or surveys', required:false}
+    ]
+  },
+  {
+    id:'issue', label:'Issue Tender & Manage Clarifications', eyebrow:'Step 5 · Communication',
+    title:'Publish and manage bidder queries',
+    intro:'Send invitations, track acknowledgements, and respond to clarification requests fairly and in writing to everyone.',
+    help:'Bidders must acknowledge within 3 working days. All clarification answers go out as an addendum to every Tenderer — never as a private reply to one bidder. This keeps the process transparent.',
+    ref:'Manual Cl. 8.2.6, 8.4.1 – 8.4.9',
+    fields:[
+      {id:'issueDate', label:'Tender issue date', type:'date', required:true},
+      {id:'clarificationDeadline', label:'Clarification request deadline', type:'date', required:true},
+      {id:'submissionDate', label:'Bid submission deadline', type:'date', required:true, validate:'afterIssue'},
+      {id:'acknowledgements', label:'Acknowledgements received (of invitations sent)', type:'text', required:false, placeholder:'e.g. 4 of 5'}
+    ],
+    attachments:[
+      {id:'invitationLetters', label:'Invitation letters sent', required:true},
+      {id:'addendaLog', label:'Clarification responses / addenda log', required:false}
+    ]
+  },
+  {
+    id:'opening', label:'Opening of Tenders', eyebrow:'Step 6 · Opening',
+    title:'Open the sealed bids',
+    intro:'Bids are opened together, on the closing date, in front of the Head of Department and SCM — never earlier, and never for a bid that arrived late.',
+    help:'If only one compliant bid is received, that\'s treated as a single Tender and should trigger a re-tender review (unless conditions for direct negotiation are met). Everything is logged on the Tender Opening Record.',
+    ref:'Manual Cl. 8.4.10 – 8.4.14, 8.5.1 – 8.5.7',
+    fields:[
+      {id:'openingDate', label:'Opening date', type:'date', required:true},
+      {id:'bidsReceived', label:'Number of sealed bids received', type:'number', required:true},
+      {id:'openedBy', label:'Opened in the presence of (names/titles)', type:'text', required:true}
+    ],
+    attachments:[{id:'openingRecord', label:'Tender Opening Record (Form 2)', required:true}]
+  },
+  {
+    id:'techeval', label:'Technical Evaluation', eyebrow:'Step 7 · Evaluation',
+    title:'Score the technical proposals',
+    intro:'The Originator scores technical compliance against the criteria published in the tender — normally within 21 days.',
+    help:'A minimum technical score (set out in your RFP) gates whether a bid\'s commercial offer even gets opened. Keep evaluators\' contact with bidders channelled only through SCM — never direct.',
+    ref:'Manual Cl. 8.6.1 – 8.6.7',
+    fields:[
+      {id:'evaluators', label:'Technical evaluation committee members', type:'text', required:true},
+      {id:'minTechScore', label:'Minimum passing technical score (%)', type:'number', required:false},
+      {id:'techCompleteDate', label:'Technical evaluation completed on', type:'date', required:true}
+    ],
+    attachments:[{id:'techEvalReport', label:'Technical evaluation report', required:true}]
+  },
+  {
+    id:'commeval', label:'Commercial Evaluation', eyebrow:'Step 8 · Evaluation',
+    title:'Compare commercial offers',
+    intro:'Only bids that passed the technical gate are opened commercially — normally evaluated within 14 days.',
+    help:'A blank price against any line item is treated as that bidder declining to supply that item. SMEs and Omani suppliers get a fair opportunity to match pricing within a 10% band if they meet the specification.',
+    ref:'Manual Cl. 8.6.3, 8.6.10 – 8.6.11',
+    fields:[
+      {id:'lowestBidder', label:'Lowest compliant bidder', type:'text', required:true},
+      {id:'lowestValue', label:'Lowest compliant bid value (OMR)', type:'number', required:true},
+      {id:'commCompleteDate', label:'Commercial evaluation completed on', type:'date', required:true}
+    ],
+    attachments:[{id:'commEvalReport', label:'Commercial evaluation / comparison summary', required:true}]
+  },
+  {
+    id:'negotiation', label:'Negotiation & Award Recommendation', eyebrow:'Step 9 · Recommendation',
+    title:'Recommend an award',
+    intro:'Bring your evaluation to a recommendation: award outright, negotiate first, or re-tender.',
+    help:'Negotiation is only allowed with the lowest-priced, qualification-carrying bid (or the second-lowest if the first declines) — never simply to chase a better price from an unqualified low bid.',
+    ref:'Manual Cl. 8.7.1 – 8.7.16',
+    fields:[
+      {id:'recommendation', label:'Recommendation', type:'options', required:true, options:[
+        {value:'award', title:'Recommend to Award', desc:'Proceed straight to the Letter of Acceptance.'},
+        {value:'negotiate', title:'Recommend to Negotiate', desc:'Enter negotiations with the qualifying lowest bidder first.'},
+        {value:'retender', title:'Recommend to Re-tender', desc:'Results unsatisfactory — restart the process.'}
+      ]},
+      {id:'awardee', label:'Recommended awardee', type:'text', required:true},
+      {id:'awardValue', label:'Recommended award value (OMR)', type:'number', required:true, hint:'This is the figure the approval chain will be calculated on.'}
+    ],
+    attachments:[
+      {id:'awardForm', label:'ITC Award Recommendation Form (Form 3)', required:true},
+      {id:'negotiationMinutes', label:'Negotiation meeting minutes', required:false, showIf:{field:'recommendation', equals:'negotiate'}}
+    ]
+  },
+  {
+    id:'approval', label:'Approval Path', eyebrow:'Step 10 · Authority Matrix', special:'approval',
+    title:'Your approval path',
+    intro:'Based on the sourcing method and award value you entered, here is who needs to approve this procurement — worked out automatically from the Authority Matrix.',
+    help:'This is calculated, not editable. If your value or method changes, revisit Steps 1, 2 or 9 and this will update.',
+    ref:'Authority Matrix — sections J, K, L',
+    attachments:[{id:'approvalSignoff', label:'Signed approval / committee minutes', required:true}]
+  },
+  {
+    id:'loa', label:'Letter of Acceptance & Contract', eyebrow:'Step 11 · Award', 
+    title:'Issue the Letter of Acceptance',
+    intro:'Once approved, formalise the award: send the LOA, then prepare the Purchase Order or Contract.',
+    help:'The successful Tenderer has 7 days to acknowledge the LOA without objection. Unsuccessful Tenderers should be sent a courteous regret letter with reasons.',
+    ref:'Manual Cl. 8.7.12 – 8.7.16, 8.8, 8.10',
+    fields:[
+      {id:'loaDate', label:'LOA issue date', type:'date', required:true},
+      {id:'instrumentType', label:'Award instrument', type:'options', required:true, options:[
+        {value:'po', title:'Purchase Order', desc:'Standard one-off order for goods/services.'},
+        {value:'blanket', title:'Blanket Purchase Order', desc:'For recurring services like legal, travel, admin.'},
+        {value:'contract', title:'Contract', desc:'Formal agreement — typically for works or complex services.'}
+      ]},
+      {id:'contractValue', label:'Final contract / PO value (OMR)', type:'number', required:true},
+      {id:'contractStart', label:'Contract / PO start date', type:'date', required:true},
+      {id:'contractEnd', label:'Contract / PO end date', type:'date', required:false}
+    ],
+    attachments:[
+      {id:'signedLoa', label:'Signed Letter of Acceptance', required:true},
+      {id:'draftContract', label:'Draft Contract / PO', required:true},
+      {id:'signedContract', label:'Countersigned Contract (both parties)', required:false}
+    ]
+  },
+  {
+    id:'bonds', label:'Bonds & Guarantees', eyebrow:'Step 12 · Financial Security',
+    title:'Confirm required bonds',
+    intro:'Depending on contract value, certain bonds must be collected before work starts.',
+    help:'Bonds must come from a local commercial bank acceptable to ASAAS, and stay valid through the full contract period (including any defects liability period).',
+    ref:'Manual Cl. 12 – 14',
+    fields:[
+      {id:'advanceRequested', label:'Has the Provider requested an advance payment?', type:'toggle', required:false}
+    ],
+    attachments:[{id:'bondDocs', label:'Bond documents received', required:false}]
+  },
+  {
+    id:'closing', label:'Contract Closing', eyebrow:'Step 13 · Completion',
+    title:'Close out the contract',
+    intro:'Confirm completion, release retained bonds, and file everything for audit.',
+    help:'If there\'s a defects liability or warranty period, hold the Final Acceptance Certificate until it lapses. Retention, performance bonds and insurance certificates are released by Finance once that period ends without issue.',
+    ref:'Manual Cl. 17.1 – 17.5',
+    fields:[
+      {id:'completionIssued', label:'Provisional Work Completion Certificate issued', type:'toggle', required:false},
+      {id:'hasWarranty', label:'Has a warranty / defects liability period', type:'toggle', required:false},
+      {id:'finalPaymentReleased', label:'Final payment released', type:'toggle', required:false}
+    ],
+    attachments:[{id:'completionCert', label:'Completion certificate(s)', required:true}]
+  }
+];
+
+// ---------- helpers ----------
+function isStepSkipped(step){
+  if(!step.skipIf) return false;
+  return state.data[step.skipIf.field] === step.skipIf.equals;
+}
+function fieldVisible(f){
+  if(!f.showIf) return true;
+  return state.data[f.showIf.field] === f.showIf.equals;
+}
+function attachVisible(a){
+  if(!a.showIf) return true;
+  return state.data[a.showIf.field] === a.showIf.equals;
+}
+function activeSteps(){ return steps.filter(s=>!isStepSkipped(s)); }
+
+function validateStep(step){
+  const errors = {};
+  (step.fields||[]).forEach(f=>{
+    if(!fieldVisible(f)) return;
+    if(f.required){
+      const v = state.data[f.id];
+      if(v===undefined || v===null || v===''){ errors[f.id] = 'This field is required to continue.'; }
+    }
+    if(f.validate==='afterIssue' && state.data[f.id] && state.data['issueDate']){
+      if(new Date(state.data[f.id]) < new Date(state.data['issueDate'])){
+        errors[f.id] = 'Submission deadline must be after the issue date.';
+      }
+    }
+  });
+  (step.attachments||[]).forEach(a=>{
+    if(!attachVisible(a)) return;
+    if(a.required && !(state.files[step.id] && state.files[step.id].some(f=>f.attachId===a.id))){
+      errors['attach_'+a.id] = 'Please attach this document to continue.';
+    }
+  });
+  return errors;
+}
+
+// ---------- render ----------
+function render(){
+  renderRail();
+  renderContent();
+  updateTopbar();
+  saveDraft();
+}
+
+function updateTopbar(){
+  document.getElementById('reqTitleTop').textContent = state.data.projectName || 'Untitled requisition';
+  document.getElementById('crumbMode').textContent = 'Procurement Request · ' + (state.data.userDept || 'Unassigned dept.');
+  const val = state.data.estValue ? Number(state.data.estValue).toLocaleString(undefined,{maximumFractionDigits:0}) : null;
+  document.getElementById('valueChip').textContent = val ? ('OMR ' + val + ' estimated') : 'Value not set';
+}
+
+function renderRail(){
+  const list = document.getElementById('stepList');
+  list.innerHTML = '';
+  const act = activeSteps();
+  const curId = steps[state.currentStep].id;
+  let activeIdx = act.findIndex(s=>s.id===curId);
+  steps.forEach((s, i)=>{
+    const li = document.createElement('li');
+    const skipped = isStepSkipped(s);
+    const idxInActive = act.findIndex(x=>x.id===s.id);
+    li.className = (i===state.currentStep?'active ':'') + (skipped?'skip disabled ':'') + (state.visited[s.id] && i!==state.currentStep && !skipped ? 'done ':'');
+    li.innerHTML = `<span class="num">${skipped?'—':(idxInActive+1)}</span><span class="label">${s.label}</span>`;
+    if(!skipped){ li.onclick = ()=>{ state.currentStep = i; render(); }; }
+    list.appendChild(li);
+  });
+  const totalActive = act.length;
+  const posInActive = activeIdx>=0?activeIdx:0;
+  document.getElementById('progressLabel').textContent = `Step ${posInActive+1} of ${totalActive}`;
+  document.getElementById('progressFill').style.width = Math.round(((posInActive+1)/totalActive)*100) + '%';
+}
+
+function fieldHtml(f){
+  const val = state.data[f.id] ?? '';
+  const hasErr = state._errors && state._errors[f.id];
+  const errCls = hasErr ? ' error' : '';
+  let inner = '';
+  if(f.type==='text' || f.type==='number' || f.type==='date'){
+    inner = `<input type="${f.type}" id="fld_${f.id}" value="${(val+'').replace(/"/g,'&quot;')}" placeholder="${f.placeholder||''}" oninput="onField('${f.id}', this.value)">`;
+  } else if(f.type==='textarea'){
+    inner = `<textarea id="fld_${f.id}" placeholder="${f.placeholder||''}" oninput="onField('${f.id}', this.value)">${val}</textarea>`;
+  } else if(f.type==='toggle'){
+    inner = `<div class="toggle-row"><label class="switch"><input type="checkbox" ${val?'checked':''} onchange="onField('${f.id}', this.checked)"><span class="slider"></span></label><span style="font-size:13px;color:var(--ink-soft)">${val?'Yes':'No'}</span></div>`;
+    return `<div class="field${errCls}" id="wrap_${f.id}"><label>${f.label}</label>${inner}${f.hint?`<span class="hint">${f.hint}</span>`:''}<div class="err-msg">${hasErr||''}</div></div>`;
+  } else if(f.type==='options'){
+    inner = `<div class="option-cards">` + f.options.map(o=>`
+      <div class="option-card ${val===o.value?'selected':''}" onclick="onField('${f.id}','${o.value}')">
+        <div class="ttl">${o.title}</div><div class="desc">${o.desc}</div>
+      </div>`).join('') + `</div>`;
+    return `<div class="field${errCls}" id="wrap_${f.id}"><label>${f.label}</label>${inner}<div class="err-msg">${hasErr||''}</div></div>`;
+  }
+  return `<div class="field${errCls}" id="wrap_${f.id}"><label>${f.label}</label>${inner}${f.hint?`<span class="hint">${f.hint}</span>`:''}<div class="err-msg">${hasErr||''}</div></div>`;
+}
+
+function onField(id, value){
+  state.data[id] = value;
+  if(state._errors) delete state._errors[id];
+  saveDraft();
+  // re-render if this field controls conditional visibility or the approval step
+  renderContent();
+  renderRail();
+  updateTopbar();
+}
+
+function attachmentHtml(step, a){
+  if(!attachVisible(a)) return '';
+  const files = (state.files[step.id]||[]).filter(f=>f.attachId===a.id);
+  const hasErr = state._errors && state._errors['attach_'+a.id];
+  return `
+  <div class="field${hasErr?' error':''}">
+    <label>${a.label} ${a.required?'<span class="attach-required">Required</span>':''}
+      ${a.tip?`<span class="tip-icon">i<span class="tip-pop">${a.tip}</span></span>`:''}
+    </label>
+    <div class="upload-zone" onclick="document.getElementById('file_${step.id}_${a.id}').click()">
+      <div class="icon">⬆</div>
+      <div class="txt"><b>Click to attach</b> or drag a file here — PDF, DOCX, XLSX up to 25MB</div>
+      <input type="file" id="file_${step.id}_${a.id}" onchange="onFile('${step.id}','${a.id}', this.files)">
+    </div>
+    <div class="file-list">
+      ${files.map((f,idx)=>`<div class="file-item"><span class="fname"><span class="fico">${(f.name.split('.').pop()||'F').slice(0,3).toUpperCase()}</span>${f.name}</span><button onclick="removeFile('${step.id}','${a.id}','${f.name.replace(/'/g,"\\'")}')">Remove</button></div>`).join('')}
+    </div>
+    <div class="err-msg">${hasErr||''}</div>
+  </div>`;
+}
+function onFile(stepId, attachId, filelist){
+  if(!filelist || !filelist.length) return;
+  const f = filelist[0];
+  state.files[stepId] = state.files[stepId] || [];
+  state.files[stepId] = state.files[stepId].filter(x=>x.attachId!==attachId); // one file per slot for simplicity
+  state.files[stepId].push({attachId, name:f.name, size:f.size});
+  if(state._errors) delete state._errors['attach_'+attachId];
+  saveDraft(); renderContent();
+}
+function removeFile(stepId, attachId, name){
+  state.files[stepId] = (state.files[stepId]||[]).filter(x=>!(x.attachId===attachId && x.name===name));
+  saveDraft(); renderContent();
+}
+
+function renderApprovalStep(step){
+  const mode = state.data.mode || 'closed_tender';
+  const value = state.data.awardValue || state.data.estValue || 0;
+  const res = tenderApproval(value, mode);
+  const bonds = bondRequirements(state.data.contractValue || value, state.data.advanceRequested);
+  return `
+  <div class="banner-warn"><span>⚠️</span><div><b>Note on source data:</b> a handful of single-letter authority markers on the scanned matrix (rows J1, J2, K1) were faint/illegible. The value thresholds below are clear and reliable; role assignments at those specific rows are best-effort and flagged — confirm with SCM before relying on this for a live award.</div></div>
+  <div class="approval-box">
+    <div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#0a5c5b;font-weight:700;">Calculated from Authority Matrix ${res.ref}</div>
+    <div class="approval-path">
+      ${res.chain.map((c,i)=>`<div class="approval-node">${c}</div>${i<res.chain.length-1?'<span class="approval-arrow">→</span>':''}`).join('')}
+    </div>
+    <div style="font-size:13px;color:#0a4a49;line-height:1.5;">${res.note}</div>
+    <div class="matrix-ref" style="margin-top:8px;">Basis: ${mode.replace('_',' ')} · OMR ${Number(value).toLocaleString()}</div>
+  </div>
+  <div class="card" style="margin-top:20px;">
+    <h3>Required bonds &amp; guarantees</h3>
+    ${bonds.map(b=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);">
+      <div><b style="font-size:13.5px;">${b.label}</b><div style="font-size:12px;color:var(--ink-soft);margin-top:2px;max-width:520px;">${b.detail}</div></div>
+      <div style="font-weight:700;color:${b.required?'var(--red)':'var(--ink-soft)'};font-size:12.5px;white-space:nowrap;">${b.required?'Required':'Not triggered'}</div>
+    </div>`).join('')}
+  </div>
+  <div class="card" style="margin-top:20px;">
+    <h3>Optional: check a contract variation</h3>
+    <div class="row2">
+      <div class="field"><label>Variation value (OMR)</label><input type="number" id="varVal" oninput="checkVariation()"></div>
+      <div class="field"><label>Variation as % of original contract</label><input type="number" id="varPct" oninput="checkVariation()"></div>
+    </div>
+    <div id="varResult" style="font-size:13px;color:var(--ink-soft);"></div>
+  </div>`;
+}
+function checkVariation(){
+  const val = document.getElementById('varVal').value;
+  const pct = document.getElementById('varPct').value;
+  const el = document.getElementById('varResult');
+  if(!val && !pct){ el.innerHTML=''; return; }
+  const res = variationApproval(pct, val);
+  el.innerHTML = `<b style="color:var(--navy)">${res.chain.join(' → ')}</b> <span class="matrix-ref">(${res.ref})</span><br>${res.note}`;
+}
+
+function renderSummaryCard(){
+  const rows = [
+    ['Project', state.data.projectName],
+    ['Department', state.data.userDept],
+    ['Estimated value', state.data.estValue?('OMR '+Number(state.data.estValue).toLocaleString()):null],
+    ['Sourcing method', state.data.mode],
+    ['Award value', state.data.awardValue?('OMR '+Number(state.data.awardValue).toLocaleString()):null],
+  ].filter(r=>r[1]);
+  if(!rows.length) return '';
+  return `<div class="card"><h3>Request summary</h3><table class="summary-table">${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table></div>`;
+}
+
+function renderContent(){
+  const step = steps[state.currentStep];
+  state.visited[step.id] = true;
+  const el = document.getElementById('content');
+
+  if(isStepSkipped(step)){
+    // auto-advance forward
+    goStep(1, true);
+    return;
+  }
+
+  let bodyHtml = '';
+  if(step.special==='approval'){
+    bodyHtml = renderApprovalStep(step);
+  } else {
+    bodyHtml = `<div class="card">${(step.fields||[]).filter(fieldVisible).map(fieldHtml).join('')}</div>`;
+  }
+
+  const attachHtml = (step.attachments||[]).length ? `<div class="card"><h3>Attachments for this step</h3>${step.attachments.map(a=>attachmentHtml(step,a)).join('')}</div>` : '';
+
+  const act = activeSteps();
+  const isFirst = act.findIndex(s=>s.id===step.id)===0;
+  const isLast = act.findIndex(s=>s.id===step.id)===act.length-1;
+
+  el.innerHTML = `
+    <div class="step-eyebrow">${step.eyebrow}</div>
+    <h1 class="step-title">${step.title}</h1>
+    <p class="step-intro">${step.intro}</p>
+    <div class="help"><b>How this works:</b> ${step.help}<span class="ref">${step.ref}</span></div>
+    ${bodyHtml}
+    ${attachHtml}
+    ${step.id==='negotiation' || step.id==='loa' ? renderSummaryCard() : ''}
+    <div class="nav-footer">
+      <button class="btn btn-ghost" ${isFirst?'disabled':''} onclick="goStep(-1)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(1)">${isLast?'Finish request':'Continue'} →</button>
+    </div>
+  `;
+  if(step.id==='approval'){ /* variation calc fields start empty */ }
+}
+
+function goStep(delta, silent){
+  const step = steps[state.currentStep];
+  if(delta>0 && !silent && step.special!=='approval'){
+    const errs = validateStep(step);
+    if(Object.keys(errs).length){
+      state._errors = errs;
+      renderContent();
+      const firstKey = Object.keys(errs)[0];
+      const anchor = document.getElementById('wrap_'+firstKey.replace('attach_','')) ;
+      if(anchor) anchor.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+  }
+  state._errors = {};
+  let next = state.currentStep + delta;
+  while(next>=0 && next<steps.length && isStepSkipped(steps[next])){ next += delta; }
+  if(next<0) next = 0;
+  if(next>=steps.length){
+    renderComplete();
+    return;
+  }
+  state.currentStep = next;
+  render();
+}
+
+function renderComplete(){
+  document.getElementById('content').innerHTML = `
+    <div class="complete-screen">
+      <div class="seal">✓</div>
+      <h1 class="display" style="font-size:28px;">Request package complete</h1>
+      <p style="color:var(--ink-soft);max-width:480px;margin:10px auto 26px;">
+        "${state.data.projectName||'Your requisition'}" has moved through every applicable step, with the correct approval
+        chain and attachments recorded. Route the package to the approvers shown in Step 10, then return here any time to
+        review, edit, or start a new request.
+      </p>
+      <button class="btn btn-primary" onclick="state.currentStep=0; render();">Review request</button>
+      <button class="btn btn-ghost" style="margin-left:10px;" onclick="resetAll()">Start a new request</button>
+    </div>`;
+}
+
+loadDraft();
+</script>
+</body>
+</html>
